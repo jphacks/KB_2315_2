@@ -28,7 +28,7 @@ UNIT_HBRIDGE driver;
 DHT_Unified dht1(DHT1, DHTTYPE);
 DHT_Unified dht2(DHT2, DHTTYPE);
 
-const int update_interval_sec = 5;
+const int update_interval_sec = 2;
 
 bool drying = false;
 
