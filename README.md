@@ -23,7 +23,7 @@
      - `source .venv/bin/activate`
      - `pip install -r requirements.lock -r requirements-dev.lock`
 
-3. 実行
-    - `python src/run/data_sampler.py`
-
 ### 実行
+
+1. 実行
+    - `python src/run/data_sampler.py`

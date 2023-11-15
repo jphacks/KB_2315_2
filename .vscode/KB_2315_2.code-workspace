@@ -4,9 +4,11 @@
 			"path": ".."
 		},
 		{
+			"name": "python",
 			"path": "../src"
 		},
 		{
+			"name": "arduino",
 			"path": "../arduino"
 		}
 	],

@@ -1,6 +1,4 @@
-import glob
 import json
-import os.path
 import random
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
