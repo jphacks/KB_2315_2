@@ -24,10 +24,27 @@
 
     - `python src/run/csv_exporter.py`
 
-## [visualizer.py](../../src/run/visualizer.py)
+## [dh_visualizer.py](../../src/run/dh_visualizer.py)
 
-- Arduino のセンササーバからの出力を取得して，CSVファイルに出力 & グラフを表示する
+- センサデータの CSV ファイルから，グラフを表示する
+  - リアルタイム表示には，csv_exporter.py も実行する必要がある
+- Dash Plotly 製ビジュアライザ
+  - 1画面に収まる
+  - 新しい CSV を利用するには，サーバを再起動する必要がある
 
 ### 実行
 
-    - `python src/run/visualizer.py`
+    - `python src/run/dh_visualizer.py`
+
+## [st_visualizer.py](../../src/run/st_visualizer.py)
+
+- センサデータの CSV ファイルから，グラフを表示する
+  - リアルタイム表示には，csv_exporter.py も実行する必要がある
+
+- Stremlit Plotly 製ビジュアライザ
+  - 画面がきれい
+  - 新しい CSV を Ctrl-R のウインドウ読み込みで利用できる
+
+### 実行
+
+    - `streamlit run src/run/st_visualizer.py`
