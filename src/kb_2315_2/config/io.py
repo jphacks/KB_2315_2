@@ -34,4 +34,4 @@ def write_config(
         f.write(toml.dumps(asdict(conf)))
 
 
-conf: config.env = read_config()
+conf = read_config()

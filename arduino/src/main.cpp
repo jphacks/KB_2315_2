@@ -10,6 +10,7 @@
 #include "M5_ENV.h"
 #include "UNIT_HBRIDGE.h"
 
+#include <config.h>
 #include <secret.h>
 
 #define DHT1 27
@@ -18,7 +19,7 @@
 
 AsyncWebServer server(80);
 
-StaticJsonDocument<288> json_doc;
+StaticJsonDocument<384> json_doc;
 HTTPClient http_session;
 HTTPClient http_sensor;
 SHT3X unitsht30;
@@ -28,7 +29,7 @@ UNIT_HBRIDGE driver;
 DHT_Unified dht1(DHT1, DHTTYPE);
 DHT_Unified dht2(DHT2, DHTTYPE);
 
-const int update_interval_sec = 5;
+const int update_interval_sec = 10;
 
 bool drying = false;
 
@@ -37,7 +38,7 @@ long long timer = 0;
 float RoomTemp, RoomHumi, ShoeTemp, ShoeHumi, ShoePre, Shoe2Temp, Shoe2Humi;
 
 int debug_flag = 0;
-
+float volt = 0.0; //デバッグ用
 void setup() {
 
   M5.begin();
@@ -74,7 +75,7 @@ void setup() {
   M5.Lcd.printf("WiFi Success"); // シリアルモニタ
   // リクエストに応じてJSON形式のデータを返すエンドポイントの設定
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-    char exporter_plain_json[1536];
+    char exporter_plain_json[3072];
     serializeJson(json_doc, exporter_plain_json, sizeof(exporter_plain_json));
 
     request->send(200, "application/json", exporter_plain_json);
@@ -82,6 +83,58 @@ void setup() {
 
   // サーバーの開始
   server.begin();
+}
+
+int drying_status(){
+
+  if(abs(ShoeTemp - RoomTemp) > GAP_TEMP){
+    
+    if((ShoeHumi - RoomHumi) > GAP_HUM) {
+      return 1;
+    }
+    else{
+      return 2;
+    }
+  } else {
+    return 0;
+  }  
+}
+
+void main_func() {
+  int current_drying = drying_status();
+
+  if (drying) { // 乾燥実行中
+    if (current_drying == 1) {
+      // 靴が湿気ている
+      //追い出し続行
+      driver.setDriverDirection(1);
+      driver.setDriverSpeed8Bits(255);
+    }else if (current_drying == 2) {
+      //湿度は低いが熱を持っている
+      //外気温と平衡にさせる
+      driver.setDriverDirection(1);
+      driver.setDriverSpeed8Bits(128);
+    }else {
+      // 靴が湿気ていない
+      //乾燥終了
+      driver.setDriverDirection(0);
+      driver.setDriverSpeed8Bits(0);
+      drying = false;
+    }
+  } else { // 乾燥未実行
+    if (current_drying==1) {
+      // 靴が湿気ている
+      //乾燥開始
+      driver.setDriverDirection(1);
+      driver.setDriverSpeed8Bits(255);
+      drying = true;
+    }
+    else{
+      driver.setDriverDirection(0);
+      driver.setDriverSpeed8Bits(0);   
+    }
+  }
+
 }
 
 void scan() {
@@ -130,7 +183,22 @@ void scan() {
                      ",\"humidity\":" + String(ShoeHumi) +
                      ",\"pressure\":" + String(ShoePre) + "}";
   json_doc["Shoe2"] = "{\"temperature\":" + String(Shoe2Temp) +
-                      ",\"humidity\":" + String(Shoe2Temp) + "}";
+                      ",\"humidity\":" + String(Shoe2Humi) + "}";
+
+  M5.Lcd.setRotation(3);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0, 20);
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.setTextColor(WHITE, BLACK);  
+  volt = driver.getAnalogInput(_12bit) / 4095.0f * 3.3f / 0.09f;
+  M5.Lcd.printf("Room T:%2.1f, H:%2.0f%%\r\n",
+                RoomTemp, RoomHumi);
+  M5.Lcd.printf("Shoe T:%2.1f, H:%2.0f%%, P:%2.0fPa\r\n",
+                ShoeTemp, ShoeHumi, ShoePre);
+  M5.Lcd.printf("Shoe2 T:%2.1f, H:%2.0f%%\r\n",
+                Shoe2Temp, Shoe2Humi);
+  M5.Lcd.printf("Voltage:%.2fV\r\n", volt);
+  M5.Lcd.printf("%s",WiFi.localIP().toString().c_str());
 }
 
 void loop() {
@@ -138,7 +206,10 @@ void loop() {
     timer = millis();
 
     Serial.println(WiFi.localIP());
-
+    json_doc.clear();
     scan();
+
+    main_func();
+
   }
 }
